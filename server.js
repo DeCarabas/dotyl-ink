@@ -41,6 +41,153 @@ db.serialize(function(){
 var crypto = require('crypto');
 
 
+function newSlug(callback) {
+  const SLUG_LENGTH_BYTES = 6;
+  
+  crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
+    if (err) {
+      callback(err);
+    } else {
+      const slug = base32encode(buf).replace(/=+$/, ''); // Remove pading.
+      callback(null, slug);
+    }
+  });
+}
+
+function getBySlug(slug, callback) {
+   db.get(
+    'SELECT * FROM links WHERE slug = ?', 
+    [slug], 
+    (err, row) => {
+      if (err) { 
+        console.log("getBySlug error:", err);
+        callback(err); 
+      } else {
+        callback(null, row);
+      }
+    });
+}
+
+function getByURL(url, callback) {
+   db.get(
+    'SELECT * FROM links WHERE url = ?', 
+    [url], 
+    (err, row) => {
+      if (err) { 
+        console.log("getByURL error:", err);
+        callback(err); 
+      } else {
+        callback(null, row);
+      }
+    });
+}
+
+function getLatest(callback) {
+   db.all(
+    'SELECT * FROM links ORDER BY created DESC LIMIT 100', 
+    [],
+    (err, rows) => {
+      if (err) { 
+        console.log("getLatest error:", err);
+        callback(err); 
+      } else {
+        callback(null, rows);
+      }
+    });
+}
+
+
+function insertNew(slug, url, callback) {
+   db.run(
+      'INSERT INTO links(slug, url) VALUES (?, ?)', 
+      [slug, url], 
+      (err) => {  
+        if (err) { console.log("insertNew error:", err); }
+        callback(err);
+      });
+}
+
+function formatShortLink(slug) {
+  return "/l/" + slug;
+}
+
+// http://expressjs.com/en/starter/basic-routing.html
+app.get('/', function(request, response) {
+  response.sendFile(__dirname + '/views/index.html');
+});
+
+app.get('/l/:slug', function(request, response) {  
+  console.log("Fetching by slug:", request.params.slug);
+  getBySlug(request.params.slug, (err, link) => {
+    if (err || !link) {
+      response.status(404).sendFile(__dirname + '/views/not_found.html');
+    } else {
+      response.redirect(link.url);
+    }
+  });
+});
+
+app.get('/link/:slug', function(request, response) {
+  getBySlug(request.params.slug, (err, link) => {
+      if (err) {
+        response.json({status: 'db_error', errors: [err]});
+      } else {
+        const short = formatShortLink(link.slug);
+        response.json({status: 'ok', link: {slug: link.slug, url: link.url, short}});
+      }
+  });
+});
+
+app.get('/link', function(request, response) {
+  getLatest((err, rows) => {
+    if (err) {
+      response.status(500).json({status: 'db_error', errors: [err]});
+    } else {
+      const links = rows.map(r => { 
+        return {slug: r.slug, url: r.url, short: formatShortLink(r.slug)}; 
+      });
+      response.json({status: 'ok', links: links});
+    }
+  });
+});
+
+app.post('/link', function(request, response) {
+  // TODO: Authenticate!!
+  console.log("Received a post request");
+  newSlug((err, slug) => {
+    const url = request.body.url;    
+    if (err) {
+      response.json({status: 'no', errors: [err]});
+    } else if (!url) {
+      response.json({status: 'no', errors: ['No url provided.']});
+    } else if (!(url.startsWith("http://") || url.startsWith("https://"))) {
+      response.json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
+    } else {      
+      console.log("Creating link for", slug, url);
+      insertNew(slug, url, (err_insert) => {
+        if (err_insert) {
+          getByURL(request.body.url, (err_get, existing) => {
+            if (err_get || !existing) {
+              response.json({status: 'db_error', errors: [err_insert, err_get]});
+            } else {
+              const short = formatShortLink(existing.slug);
+              response.json({status: 'ok', link: {slug: existing.slug, url, short}});
+            }
+          });
+        } else {          
+          const short = formatShortLink(slug);
+          response.json({status: 'ok', link: {slug, url, short}});
+        }
+      });
+    }
+  });
+});
+
+// listen for requests :)
+var listener = app.listen(process.env.PORT, function() {
+  console.log('Your app is listening on port ' + listener.address().port);
+});
+
 function base32encode(buf) {
   const table = "abcdefghijklmonpqrstuvwxyz234567=";
   let result = "";
@@ -117,118 +264,3 @@ function base32encode(buf) {
   
   return result;
 }
-
-function newSlug(callback) {
-  const SLUG_LENGTH_BYTES = 6;
-  
-  crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
-    if (err) {
-      callback(err);
-    } else {
-      const slug = base32encode(buf).replace(/=+$/, ''); // Remove pading.
-      callback(null, slug);
-    }
-  });
-}
-
-function getBySlug(slug, callback) {
-   db.get(
-    'SELCT * FROM links WHERE slug = ?', 
-    [slug], 
-    (err, row) => {
-      if (err) { 
-        console.log("getBySlug error:", err);
-        callback(err); 
-      } else {
-        callback(null, row);
-      }
-    });
-}
-
-function getByURL(url, callback) {
-   db.get(
-    'SELECT * FROM links WHERE url = ?', 
-    [url], 
-    (err, row) => {
-      if (err) { 
-        console.log("getByURL error:", err);
-        callback(err); 
-      } else {
-        callback(null, row);
-      }
-    });
-}
-
-function insertNew(slug, url, callback) {
-   db.run(
-      'INSERT INTO links(slug, url) VALUES (?, ?)', 
-      [slug, url], 
-      (err) => {  
-        if (err) { console.log("insertNew error:", err); }
-        callback(err);
-      });
-}
-
-// http://expressjs.com/en/starter/basic-routing.html
-app.get('/', function(request, response) {
-  response.sendFile(__dirname + '/views/index.html');
-});
-
-app.get('/l/:slug', function(request, response) {  
-  console.log("Fetching by slug:", request.params.slug);
-  getBySlug(request.params.slug, (err, link) => {
-    if (err || !link) {      
-      response.status(404).sendFile(__dirname + '/views/not_found.html');
-    } else {
-      response.redirect(link.url);
-    }
-  });
-});
-
-// endpoint to get all the dreams in the database
-// currently this is the only endpoint, ie. adding dreams won't update the database
-// read the sqlite3 module docs and try to add your own! https://www.npmjs.com/package/sqlite3
-app.get('/link/:slug', function(request, response) {
-  getBySlug(request.params.slug, (err, link) => {
-      if (err) {
-        response.json({status: 'db_error', errors: [err]});
-      } else {
-        response.json({status: 'ok', link: link});
-      }
-  });
-});
-
-app.post('/link', function(request, response) {
-  // TODO: Authenticate!!
-  console.log("Received a post request");
-  newSlug((err, slug) => {
-    const url = request.body.url;
-    if (err) {
-      response.json({status: 'no', errors: [err]});
-    } else if (!url) {
-      response.json({status: 'no', errors: ['No url provided.']});
-    } else if (!(url.startsWith("http://") || url.startsWith("https://"))) {
-      response.json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
-    } else {      
-      console.log("Creating link for", slug, url);
-      insertNew(slug, url, (err_insert) => {
-        if (err_insert) {
-          getByURL(request.body.url, (err_get, link) => {
-            if (err_get || !link) {
-              response.json({status: 'db_error', errors: [err_insert, err_get]});
-            } else {
-              response.json({status: 'ok', link: link});
-            }
-          });
-        } else {
-          response.json({status: 'ok', link: {slug, url}});
-        }
-      });
-    }
-  });
-});
-
-// listen for requests :)
-var listener = app.listen(process.env.PORT, function() {
-  console.log('Your app is listening on port ' + listener.address().port);
-});

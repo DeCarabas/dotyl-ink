@@ -10,22 +10,32 @@ const urlsList = document.getElementById('urls');
 const urlForm = document.forms[0];
 const urlInput = urlForm.elements['url'];
 
-// // a helper function to call when our request for dreams is done
-// const getDreamsListener = function() {
-//   // parse our response to convert to JSON
-//   dreams = JSON.parse(this.responseText);
+// a helper function to call when our request for dreams is done
+const getDreamsListener = function() {
+  // parse our response to convert to JSON
+  dreams = JSON.parse(this.responseText);
 
-//   // iterate through every dream and add it to our page
-//   dreams.forEach( function(row) {
-//     appendNewDream(row.dream);
-//   });
-// }
+  // iterate through every dream and add it to our page
+  dreams.forEach( function(row) {
+    appendNewDream(row.dream);
+  });
+}
 
-// // request the dreams from our app's sqlite database
-// const dreamRequest = new XMLHttpRequest();
-// dreamRequest.onload = getDreamsListener;
-// dreamRequest.open('get', '/getDreams');
-// dreamRequest.send();
+// request the dreams from our app's sqlite database
+const dreamRequest = new XMLHttpRequest();
+dreamRequest.onload = getDreamsListener;
+dreamRequest.open('get', '/getDreams');
+dreamRequest.send();
+
+function appendNewLink(link) {
+  const newListItem = document.createElement('li');
+  newListItem.innerHTML = "<a href='" + link.short + "'>" + link.url + "</a>";
+  if (urlsList.firstChild) {
+    urlsList.insertBefore();
+  } else {
+    urlsList.appendChild(newListItem);
+  }
+}
 
 // listen for the form to be submitted and add a new dream when it is
 urlForm.onsubmit = function(event) {
