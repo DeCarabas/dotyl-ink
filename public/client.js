@@ -47,7 +47,8 @@ urlForm.onsubmit = function(event) {
       urlInput.value = '';
       urlInput.focus();
     } else {
-      alert(response.errors);      
+      console.log(response.errors);
+      //alert(response.errors);      
     }
   };
   urlRequest.open('post', '/link');

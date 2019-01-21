@@ -1,25 +1,21 @@
 // server.js
 // where your node app starts
+const assert = require('assert');
 
 // init project
-var express = require('express');
-var bodyParser = require('body-parser');
-var app = express();
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// we've started you off with Express, 
-// but feel free to use whatever libs or frameworks you'd like through `package.json`.
-
-// http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'));
 app.use(express.json());
 
 // init sqlite db
-var fs = require('fs');
-var dbFile = './.data/sqlite.db';
-var exists = fs.existsSync(dbFile);
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database(dbFile);
+const fs = require('fs');
+const dbFile = './.data/sqlite.db';
+const exists = fs.existsSync(dbFile);
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database(dbFile);
 
 // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
 db.serialize(function(){
@@ -44,80 +40,79 @@ db.serialize(function(){
 
 var crypto = require('crypto');
 
-const table = "abcdefghijklmonpqrstuvwxyz234567";
 
-function encode(buf) {
-  let i = 0;
+function base32encode(buf) {
+  const table = "abcdefghijklmonpqrstuvwxyz234567=";
   let result = "";
 
-  let n1, n2, n3, n4, n5, n6, n7, n8;  
+  let i = 0;
   let src_size = buf.length;
+  let n1, n2, n3, n4, n5, n6, n7, n8;  
   while (src_size >= 1)
   {
-      /* Encode inputs */    
-      const block_size  = (src_size < 5 ? src_size : 5);
-    
-      switch (block_size)
-      {
-      case 5:
-          n8 = (pSrc[4] & 0x1f);
-          n7 = ((pSrc[4] & 0xe0) >> 5);
-      case 4:
-          n7 |= ((pSrc[3] & 0x03) << 3);
-          n6 = ((pSrc[3] & 0x7c) >> 2);
-          n5 = ((pSrc[3] & 0x80) >> 7);
-      case 3:
-          n5 |= ((pSrc[2] & 0x0f) << 1);
-          n4 = ((pSrc[2] & 0xf0) >> 4);
-      case 2:
-          n4 |= ((pSrc[1] & 0x01) << 4);
-          n3 = ((pSrc[1] & 0x3e) >> 1);
-          n2 = ((pSrc[1] & 0xc0) >> 6);
-      case 1:
-          n2 |= ((pSrc[0] & 0x07) << 2);
-          n1 = ((pSrc[0] & 0xf8) >> 3);
-          break;
+    // Inputs.
+    n1 = n2 = n3 = n4 = n5 = n6 = n7 = n8 = 0;
+    const block_size  = (src_size < 5 ? src_size : 5);
+    switch (block_size)
+    {
+    case 5:
+        n8 = (buf[i+4] & 0x1f);
+        n7 = ((buf[i+4] & 0xe0) >> 5);
+    case 4:
+        n7 |= ((buf[i+3] & 0x03) << 3);
+        n6 = ((buf[i+3] & 0x7c) >> 2);
+        n5 = ((buf[i+3] & 0x80) >> 7);
+    case 3:
+        n5 |= ((buf[i+2] & 0x0f) << 1);
+        n4 = ((buf[i+2] & 0xf0) >> 4);
+    case 2:
+        n4 |= ((buf[i+1] & 0x01) << 4);
+        n3 = ((buf[i+1] & 0x3e) >> 1);
+        n2 = ((buf[i+1] & 0xc0) >> 6);
+    case 1:
+        n2 |= ((buf[i+0] & 0x07) << 2);
+        n1 = ((buf[i+0] & 0xf8) >> 3);
+        break;
 
-      default:
-          assert(0);
-      }
-      pSrc += dwBlockSize;
-      dwSrcSize -= dwBlockSize;
+    default:
+        // Not reached
+        assert(0);
+    }
+    i += block_size;
+    src_size -= block_size;
 
-      /* Validate */
-      assert(n1 <= 31);
-      assert(n2 <= 31);
-      assert(n3 <= 31);
-      assert(n4 <= 31);
-      assert(n5 <= 31);
-      assert(n6 <= 31);
-      assert(n7 <= 31);
-      assert(n8 <= 31);
+    // Validate
+    assert(n1 <= 31);
+    assert(n2 <= 31);
+    assert(n3 <= 31);
+    assert(n4 <= 31);
+    assert(n5 <= 31);
+    assert(n6 <= 31);
+    assert(n7 <= 31);
+    assert(n8 <= 31);
 
-      /* Padding */
-      switch (dwBlockSize)
-      {
-      case 1: n3 = n4 = 32;
-      case 2: n5 = 32;
-      case 3: n6 = n7 = 32;
-      case 4: n8 = 32;
-      case 5:
-          break;
+    // Padding?
+    switch (block_size)
+    {        
+    case 1: n3 = n4 = 32;
+    case 2: n5 = 32;
+    case 3: n6 = n7 = 32;
+    case 4: n8 = 32;
+    case 5:
+        break;
 
-      default:
-          assert(0);
-      }
+    default:
+        assert(0);
+    }
 
-      /* 8 outputs */
-      *pDest++ = BASE32_TABLE[n1];
-      *pDest++ = BASE32_TABLE[n2];
-      *pDest++ = BASE32_TABLE[n3];
-      *pDest++ = BASE32_TABLE[n4];
-      *pDest++ = BASE32_TABLE[n5];
-      *pDest++ = BASE32_TABLE[n6];
-      *pDest++ = BASE32_TABLE[n7];
-      *pDest++ = BASE32_TABLE[n8];
-      dwDestSize += BASE32_OUTPUT;
+    result += table[n1];
+    result += table[n2];
+    result += table[n3];
+    result += table[n4];
+    result += table[n5];
+    result += table[n6];
+    result += table[n7];
+    result += table[n8];
   }
   
   return result;
@@ -130,11 +125,7 @@ function newSlug(callback) {
     if (err) {
       callback(err);
     } else {
-      const slug = buf.toString('base64')
-        .replace(/\+/g, '-') // Convert '+' to '-'
-        .replace(/\//g, '_') // Convert '/' to '_'
-        .replace(/=+$/, ''); // Remove ending '='
-
+      const slug = base32encode(buf).replace(/=+$/, ''); // Remove pading.
       callback(null, slug);
     }
   });
@@ -146,6 +137,7 @@ function getBySlug(slug, callback) {
     [slug], 
     (err, row) => {
       if (err) { 
+        console.log("getBySlug error:", err);
         callback(err); 
       } else {
         callback(null, row);
@@ -155,10 +147,11 @@ function getBySlug(slug, callback) {
 
 function getByURL(url, callback) {
    db.get(
-    'SELCT * FROM links WHERE url = ?', 
+    'SELECT * FROM links WHERE url = ?', 
     [url], 
     (err, row) => {
       if (err) { 
+        console.log("getByURL error:", err);
         callback(err); 
       } else {
         callback(null, row);
@@ -168,9 +161,10 @@ function getByURL(url, callback) {
 
 function insertNew(slug, url, callback) {
    db.run(
-      'INSERT INTO links VALUES (slug = ?, url = ?)', 
+      'INSERT INTO links(slug, url) VALUES (?, ?)', 
       [slug, url], 
       (err) => {  
+        if (err) { console.log("insertNew error:", err); }
         callback(err);
       });
 }
