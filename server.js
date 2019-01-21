@@ -45,7 +45,7 @@ db.serialize(function(){
 var crypto = require('crypto');
 
 function newSlug(callback) {
-  const SLUG_LENGTH_BYTES = 8;
+  const SLUG_LENGTH_BYTES = 6;
   
   crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
     if (err) {
@@ -151,26 +151,6 @@ app.post('/link', function(request, response) {
           response.json({status: 'ok', link: {slug, url}});
         }
       });
-      
-      db.run(
-        'INSERT INTO links VALUES (slug = ?, url = ?)', 
-        [slug, request.body.url], 
-        (err) => {
-          if (err) {
-            db.get(
-              'SELECT * FROM links WHERE url = ?', 
-              [request.body.url], 
-              (err, row) => {
-                if (err) {
-                  response.json({status: 'db_error', error: err});
-                } else {
-                  response.json({status: 'ok', link: row});
-                }                
-              });
-          } else {
-            response.json({status: 'ok', href: ''});        
-          }
-        });    
     }
   });
 });
