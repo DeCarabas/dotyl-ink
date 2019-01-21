@@ -23,13 +23,7 @@ var db = new sqlite3.Database(dbFile);
 // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
 db.serialize(function(){
   if (!exists) {
-    db.run('CREATE TABLE Dreams (dream TEXT)');
-    console.log('New table Dreams created!');
-    
-    // insert default dreams
-    db.serialize(function() {
-      db.run('INSERT INTO Dreams (dream) VALUES ("Find and count some sheep"), ("Climb a really tall mountain"), ("Wash the dishes")');
-    });
+    db.run('CREATE TABLE links (slug TEXT PRIMARY KEY, url TEXT)');
   }
   else {
     console.log('Database "Dreams" ready to go!');
@@ -44,6 +38,10 @@ db.serialize(function(){
 // http://expressjs.com/en/starter/basic-routing.html
 app.get('/', function(request, response) {
   response.sendFile(__dirname + '/views/index.html');
+});
+
+app.get('/l/:slug', function(request, response) {
+  db.get('SELCT * FROM links WHERE slug = ')
 });
 
 // endpoint to get all the dreams in the database
