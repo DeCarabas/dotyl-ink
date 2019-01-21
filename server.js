@@ -12,6 +12,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'));
+app.use(express.json());
+
 
 // init sqlite db
 var fs = require('fs');
@@ -32,7 +34,7 @@ db.serialize(function(){
     );
   }
   else {
-    console.log('Database "Dreams" ready to go!');
+    console.log('Database ready to go!');
     db.each('SELECT * FROM links LIMIT 10', function(err, row) {
       if (row) {
         console.log('record:', row);
@@ -43,14 +45,19 @@ db.serialize(function(){
 
 var crypto = require('crypto');
 function newSlug(callback) {
-  crypto.randomBytes(8, (err, buf) => {
+  const SLUG_LENGTH_BYTES = 8;
+  
+  crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
     if (err) {
       callback(err);
-      return;
+    } else {
+      const slug = buf.toString('base64')
+        .replace(/\+/g, '-') // Convert '+' to '-'
+        .replace(/\//g, '_') // Convert '/' to '_'
+        .replace(/=+$/, ''); // Remove ending '='
+
+      callback(null, slug);
     }
-    
-    callback(null, 
-    console.log(`${buf.length} bytes of random data: ${buf.toString('hex')}`);
   });
 }
 
@@ -88,15 +95,16 @@ app.get('/link/:slug', function(request, response) {
 });
 
 app.post('/link', function(request, response) {
-  // Hash URL and try to insert successively longer prefixes? Make a random slug?
-  
-  db.run(
-    'INSERT INTO links VALUES (slug = ?, url = ?)', 
-    [slug, url], 
-    (err) => {
-      
-    });
-  response.json({status: 'ok'});
+  newSlug((err, slug) => {
+    
+    db.run(
+      'INSERT INTO links VALUES (slug = ?, url = ?)', 
+      [slug, url], 
+      (err) => {
+
+      });
+    response.json({status: 'ok'});
+  });
 });
 
 // listen for requests :)
