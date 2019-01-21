@@ -6,9 +6,9 @@ console.log('hello world :o');
 let dreams = [];
 
 // define variables that reference elements on our page
-const dreamsList = document.getElementById('dreams');
-const dreamsForm = document.forms[0];
-const dreamInput = dreamsForm.elements['dream'];
+const urlsList = document.getElementById('urls');
+const urlForm = document.forms[0];
+const urlInput = urlForm.elements['dream'];
 
 // a helper function to call when our request for dreams is done
 const getDreamsListener = function() {
@@ -35,12 +35,21 @@ const appendNewDream = function(dream) {
 }
 
 // listen for the form to be submitted and add a new dream when it is
-dreamsForm.onsubmit = function(event) {
+urlForm.onsubmit = function(event) {
   // stop our form submission from refreshing the page
   event.preventDefault();
 
   // get dream value and add it to the list
-  dreams.push(dreamInput.value);
+  const urlRequest = new XMLHttpRequest();
+  urlRequest.onload = () => {
+  };
+  urlRequest.open('post', '/link');
+  urlRequest.setRequestHeader("Content-Type", "application/json");
+  urlRequest.send(JSON.stringify({
+    url: urlInput.value().trim(),
+  }));
+  
+  dreams.push(dreamInput.value);  
   appendNewDream(dreamInput.value);
 
   // reset form 

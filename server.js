@@ -102,9 +102,10 @@ app.get('/', function(request, response) {
 });
 
 app.get('/l/:slug', function(request, response) {  
+  console.log("Fetching by slug:", request.params.slug);
   getBySlug(request.params.slug, (err, link) => {
-    if (err || !link) {
-      // Redirect to error page!      
+    if (err || !link) {      
+      response.status(404).sendFile(__dirname + '/views/not_found.html');
     } else {
       response.redirect(link.url);
     }
@@ -132,7 +133,9 @@ app.post('/link', function(request, response) {
       response.json({status: 'no', errors: [err]});
     } else if (!url) {
       response.json({status: 'no', errors: ['No url provided.']});
-    } else {
+    } else if (!(url.startwWith("http://") || url.startwWith("https://"))) {
+      response.json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
+    } else {      
       insertNew(slug, url, (err_insert) => {
         if (err_insert) {
           getByURL(request.body.url, (err_get, link) => {
