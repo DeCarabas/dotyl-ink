@@ -30,7 +30,9 @@
 
     <main>
       <form>
-        <input name="url" type="text" maxlength="4096" placeholder="Url" aria-labelledby="submit-url">
+        <input name="user" type="text" placeholder="email@address" autocomplete="username">
+        <input name="password" type="password" autocomplete="current-password">        
+        <input name="url" type="text" maxlength="4096" placeholder="Url" autocomplete="url" aria-labelledby="submit-url">
         <button type="submit" id="submit-url">Submit URL</button>
       </form>
       

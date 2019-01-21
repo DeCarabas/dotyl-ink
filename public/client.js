@@ -8,6 +8,8 @@ let dreams = [];
 // define variables that reference elements on our page
 const urlsList = document.getElementById('urls');
 const urlForm = document.forms[0];
+const userInput = urlForm.elements['user'];
+const passwordInput = urlForm.elements['password'];
 const urlInput = urlForm.elements['url'];
 
 // a helper function to call when our request for dreams is done
@@ -53,6 +55,8 @@ urlForm.onsubmit = function(event) {
   urlRequest.open('post', '/link');
   urlRequest.setRequestHeader("Content-Type", "application/json");
   urlRequest.send(JSON.stringify({
+    user: userInput.value.trim(),
+    password: userInput.value.trim(),
     url: urlInput.value.trim(),
   }));
 };

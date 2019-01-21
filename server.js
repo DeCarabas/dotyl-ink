@@ -130,7 +130,7 @@ app.get('/l/:slug', function(request, response) {
 app.get('/link/:slug', function(request, response) {
   getBySlug(request.params.slug, (err, link) => {
       if (err) {
-        response.json({status: 'db_error', errors: [err]});
+        response.status(500).json({status: 'db_error', errors: [err]});
       } else {
         const short = formatShortLink(link.slug);
         response.json({status: 'ok', link: {slug: link.slug, url: link.url, short}});
@@ -153,8 +153,8 @@ app.get('/link', function(request, response) {
 
 app.post('/link', function(request, response) {  
   console.log("Received a post request");
-  if (request.body.password != process.env.PASSWORD) {
-    response.status()
+  if (request.body.password != process.env.PASSWORD) {    
+    response.status(403).end();
     return;
   }
   
@@ -163,16 +163,16 @@ app.post('/link', function(request, response) {
     if (err) {
       response.json({status: 'no', errors: [err]});
     } else if (!url) {
-      response.json({status: 'no', errors: ['No url provided.']});
+      response.status(400).json({status: 'no', errors: ['No url provided.']});
     } else if (!(url.startsWith("http://") || url.startsWith("https://"))) {
-      response.json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
+      response.status(400).json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
     } else {      
       console.log("Creating link for", slug, url);
       insertNew(slug, url, (err_insert) => {
         if (err_insert) {
           getByURL(request.body.url, (err_get, existing) => {
             if (err_get || !existing) {
-              response.json({status: 'db_error', errors: [err_insert, err_get]});
+              response.status(500).json({status: 'db_error', errors: [err_insert, err_get]});
             } else {
               const short = formatShortLink(existing.slug);
               response.json({status: 'ok', link: {slug: existing.slug, url, short}});
