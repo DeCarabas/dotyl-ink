@@ -127,15 +127,17 @@ app.get('/link/:slug', function(request, response) {
 
 app.post('/link', function(request, response) {
   // TODO: Authenticate!!
+  console.log("Received a post request");
   newSlug((err, slug) => {
     const url = request.body.url;
     if (err) {
       response.json({status: 'no', errors: [err]});
     } else if (!url) {
       response.json({status: 'no', errors: ['No url provided.']});
-    } else if (!(url.startwWith("http://") || url.startwWith("https://"))) {
+    } else if (!(url.startsWith("http://") || url.startsWith("https://"))) {
       response.json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
     } else {      
+      console.log("Creating link for", slug, url);
       insertNew(slug, url, (err_insert) => {
         if (err_insert) {
           getByURL(request.body.url, (err_get, link) => {
