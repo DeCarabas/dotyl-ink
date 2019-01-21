@@ -43,6 +43,7 @@ db.serialize(function(){
 });
 
 var crypto = require('crypto');
+
 function newSlug(callback) {
   const SLUG_LENGTH_BYTES = 8;
   
@@ -60,37 +61,67 @@ function newSlug(callback) {
   });
 }
 
+function getBySlug(slug, callback) {
+   db.get(
+    'SELCT * FROM links WHERE slug = ?', 
+    [slug], 
+    (err, row) => {
+      if (err) { 
+        callback(err); 
+      } else {
+        callback(null, row);
+      }
+    });
+}
+
+function getByURL(url, callback) {
+   db.get(
+    'SELCT * FROM links WHERE url = ?', 
+    [url], 
+    (err, row) => {
+      if (err) { 
+        callback(err); 
+      } else {
+        callback(null, row);
+      }
+    });
+}
+
+function insertNew(slug, url, callback) {
+   db.run(
+      'INSERT INTO links VALUES (slug = ?, url = ?)', 
+      [slug, url], 
+      (err) => {  
+        callback(err);
+      });
+}
+
 // http://expressjs.com/en/starter/basic-routing.html
 app.get('/', function(request, response) {
   response.sendFile(__dirname + '/views/index.html');
 });
 
-app.get('/l/:slug', function(request, response) {
-  db.get(
-    'SELCT * FROM links WHERE slug = ?', 
-    [request.params.slug], 
-    (err, row) => {
-      if (row) {
-        response.redirect(row.url);
-      }
-    });
+app.get('/l/:slug', function(request, response) {  
+  getBySlug(request.params.slug, (err, link) => {
+    if (err || !link) {
+      // Redirect to error page!      
+    } else {
+      response.redirect(link.url);
+    }
+  });
 });
 
 // endpoint to get all the dreams in the database
 // currently this is the only endpoint, ie. adding dreams won't update the database
 // read the sqlite3 module docs and try to add your own! https://www.npmjs.com/package/sqlite3
 app.get('/link/:slug', function(request, response) {
-  db.get(
-    'SELECT * FROM links WHERE slug = ?', 
-    [request.params.slug], 
-    (err, row) => {
+  getBySlug(request.params.slug, (err, link) => {
       if (err) {
         response.json({status: 'db_error', error: err});
       } else {
         response.json({status: 'ok', link: row});
       }
-    }
-  );
+  });
 });
 
 app.post('/link', function(request, response) {
