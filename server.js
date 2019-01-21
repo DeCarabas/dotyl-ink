@@ -44,6 +44,16 @@ db.serialize(function(){
 
 var crypto = require('crypto');
 
+const table = "abcdefghijklmonpqrstuvwxyz234567";
+
+function encode(buf) {
+  let i = 0;
+  let fullCount = buf.length - (buf.length % 5);
+  while (i < buf.length) {
+    
+  }
+}
+
 function newSlug(callback) {
   const SLUG_LENGTH_BYTES = 6;
   
