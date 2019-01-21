@@ -117,9 +117,9 @@ app.get('/l/:slug', function(request, response) {
 app.get('/link/:slug', function(request, response) {
   getBySlug(request.params.slug, (err, link) => {
       if (err) {
-        response.json({status: 'db_error', error: err});
+        response.json({status: 'db_error', errors: [err]});
       } else {
-        response.json({status: 'ok', link: row});
+        response.json({status: 'ok', link: link});
       }
   });
 });
@@ -127,9 +127,26 @@ app.get('/link/:slug', function(request, response) {
 app.post('/link', function(request, response) {
   // TODO: Authenticate!!
   newSlug((err, slug) => {
-    if (!request.body.url) {
-      response.json({status: 'no', error: 'No url provided.'});
+    const url = request.body.url;
+    if (err) {
+      response.json({status: 'no', errors: [err]});
+    } else if (!url) {
+      response.json({status: 'no', errors: ['No url provided.']});
     } else {
+      insertNew(slug, url, (err_insert) => {
+        if (err_insert) {
+          getByURL(request.body.url, (err_get, link) => {
+            if (err_get || !link) {
+              response.json({status: 'db_error', errors: [err_insert, err_get]});
+            } else {
+              response.json({status: 'ok', link: link});
+            }
+          });
+        } else {
+          response.json({status: 'ok', link: {slug, url}});
+        }
+      });
+      
       db.run(
         'INSERT INTO links VALUES (slug = ?, url = ?)', 
         [slug, request.body.url], 
