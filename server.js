@@ -48,10 +48,79 @@ const table = "abcdefghijklmonpqrstuvwxyz234567";
 
 function encode(buf) {
   let i = 0;
-  let fullCount = buf.length - (buf.length % 5);
-  while (i < buf.length) {
+  let result = "";
+
+  let n1, n2, n3, n4, n5, n6, n7, n8;  
+  let src_size = buf.length;
+  while (src_size >= 1)
+  {
+      /* Encode inputs */    
+      const block_size  = (src_size < 5 ? src_size : 5);
     
+      switch (block_size)
+      {
+      case 5:
+          n8 = (pSrc[4] & 0x1f);
+          n7 = ((pSrc[4] & 0xe0) >> 5);
+      case 4:
+          n7 |= ((pSrc[3] & 0x03) << 3);
+          n6 = ((pSrc[3] & 0x7c) >> 2);
+          n5 = ((pSrc[3] & 0x80) >> 7);
+      case 3:
+          n5 |= ((pSrc[2] & 0x0f) << 1);
+          n4 = ((pSrc[2] & 0xf0) >> 4);
+      case 2:
+          n4 |= ((pSrc[1] & 0x01) << 4);
+          n3 = ((pSrc[1] & 0x3e) >> 1);
+          n2 = ((pSrc[1] & 0xc0) >> 6);
+      case 1:
+          n2 |= ((pSrc[0] & 0x07) << 2);
+          n1 = ((pSrc[0] & 0xf8) >> 3);
+          break;
+
+      default:
+          assert(0);
+      }
+      pSrc += dwBlockSize;
+      dwSrcSize -= dwBlockSize;
+
+      /* Validate */
+      assert(n1 <= 31);
+      assert(n2 <= 31);
+      assert(n3 <= 31);
+      assert(n4 <= 31);
+      assert(n5 <= 31);
+      assert(n6 <= 31);
+      assert(n7 <= 31);
+      assert(n8 <= 31);
+
+      /* Padding */
+      switch (dwBlockSize)
+      {
+      case 1: n3 = n4 = 32;
+      case 2: n5 = 32;
+      case 3: n6 = n7 = 32;
+      case 4: n8 = 32;
+      case 5:
+          break;
+
+      default:
+          assert(0);
+      }
+
+      /* 8 outputs */
+      *pDest++ = BASE32_TABLE[n1];
+      *pDest++ = BASE32_TABLE[n2];
+      *pDest++ = BASE32_TABLE[n3];
+      *pDest++ = BASE32_TABLE[n4];
+      *pDest++ = BASE32_TABLE[n5];
+      *pDest++ = BASE32_TABLE[n6];
+      *pDest++ = BASE32_TABLE[n7];
+      *pDest++ = BASE32_TABLE[n8];
+      dwDestSize += BASE32_OUTPUT;
   }
+  
+  return result;
 }
 
 function newSlug(callback) {
