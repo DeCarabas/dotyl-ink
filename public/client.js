@@ -56,7 +56,7 @@ urlForm.onsubmit = function(event) {
   urlRequest.setRequestHeader("Content-Type", "application/json");
   urlRequest.send(JSON.stringify({
     user: userInput.value.trim(),
-    password: userInput.value.trim(),
+    password: passwordInput.value.trim(),
     url: urlInput.value.trim(),
   }));
 };

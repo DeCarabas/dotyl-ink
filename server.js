@@ -153,8 +153,9 @@ app.get('/link', function(request, response) {
 
 app.post('/link', function(request, response) {  
   console.log("Received a post request");
-  if (request.body.password != process.env.PASSWORD) {    
-    response.status(403).end();
+  if (request.body.password != process.env.PASSWORD) {
+    console.log(request.body, process.env.PASSWORD);
+    response.status(403).json({status: 'access_denied'});
     return;
   }
   
