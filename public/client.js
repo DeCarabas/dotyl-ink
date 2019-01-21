@@ -11,36 +11,28 @@ const urlForm = document.forms[0];
 const urlInput = urlForm.elements['url'];
 
 // a helper function to call when our request for dreams is done
-const getDreamsListener = function() {
-  // parse our response to convert to JSON
-  dreams = JSON.parse(this.responseText);
-
-  // iterate through every dream and add it to our page
-  dreams.forEach( function(row) {
-    appendNewDream(row.dream);
+const getLinksListener = function() {
+  const response = JSON.parse(this.responseText);  
+  response.links.reverse();
+  response.links.forEach((link) => {
+    appendNewLink(link);
   });
 }
 
-// request the dreams from our app's sqlite database
 const dreamRequest = new XMLHttpRequest();
-dreamRequest.onload = getDreamsListener;
-dreamRequest.open('get', '/getDreams');
+dreamRequest.onload = getLinksListener;
+dreamRequest.open('get', '/link');
 dreamRequest.send();
 
 function appendNewLink(link) {
   const newListItem = document.createElement('li');
   newListItem.innerHTML = "<a href='" + link.short + "'>" + link.url + "</a>";
-  if (urlsList.firstChild) {
-    urlsList.insertBefore();
-  } else {
-    urlsList.appendChild(newListItem);
-  }
+  console.log(urlsList.firstChild);
+  urlsList.insertBefore(newListItem, urlsList.firstChild);
 }
 
 // listen for the form to be submitted and add a new dream when it is
-urlForm.onsubmit = function(event) {
-  console.log("HELLO!");
-  
+urlForm.onsubmit = function(event) {  
   // stop our form submission from refreshing the page
   event.preventDefault();
 
@@ -50,15 +42,12 @@ urlForm.onsubmit = function(event) {
     const response = JSON.parse(urlRequest.responseText);
     if (response.status == 'ok') {
       const link = response.link;
-      const newListItem = document.createElement('li');
-      newListItem.innerHTML = "<a href='/l/" + link.slug + "'>" + link.url + "</a>";
-      urlsList.appendChild(newListItem);
+      appendNewLink(link);
       
       urlInput.value = '';
       urlInput.focus();
     } else {
       console.log(response.errors);
-      //alert(response.errors);      
     }
   };
   urlRequest.open('post', '/link');

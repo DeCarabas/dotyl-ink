@@ -151,9 +151,13 @@ app.get('/link', function(request, response) {
   });
 });
 
-app.post('/link', function(request, response) {
-  // TODO: Authenticate!!
+app.post('/link', function(request, response) {  
   console.log("Received a post request");
+  if (request.body.password != process.env.PASSWORD) {
+    response.status()
+    return;
+  }
+  
   newSlug((err, slug) => {
     const url = request.body.url;    
     if (err) {
