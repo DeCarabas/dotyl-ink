@@ -41,6 +41,19 @@ db.serialize(function(){
   }
 });
 
+var crypto = require('crypto');
+function newSlug(callback) {
+  crypto.randomBytes(8, (err, buf) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+    
+    callback(null, 
+    console.log(`${buf.length} bytes of random data: ${buf.toString('hex')}`);
+  });
+}
+
 // http://expressjs.com/en/starter/basic-routing.html
 app.get('/', function(request, response) {
   response.sendFile(__dirname + '/views/index.html');
@@ -51,7 +64,9 @@ app.get('/l/:slug', function(request, response) {
     'SELCT * FROM links WHERE slug = ?', 
     [request.params.slug], 
     (err, row) => {
-      response.redirect(row.url);
+      if (row) {
+        response.redirect(row.url);
+      }
     });
 });
 
@@ -63,13 +78,25 @@ app.get('/link/:slug', function(request, response) {
     'SELCT * FROM links WHERE slug = ?', 
     [request.params.slug], 
     (err, row) => {
-      response.send(JSON.stringify(row));
+      if (err) {
+        response.json({status: 'db_error', error: err});
+      } else {
+        response.json({status: 'ok', link: row});
+      }
     }
   );
 });
 
 app.post('/link', function(request, response) {
+  // Hash URL and try to insert successively longer prefixes? Make a random slug?
   
+  db.run(
+    'INSERT INTO links VALUES (slug = ?, url = ?)', 
+    [slug, url], 
+    (err) => {
+      
+    });
+  response.json({status: 'ok'});
 });
 
 // listen for requests :)
