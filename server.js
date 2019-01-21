@@ -14,7 +14,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(express.json());
 
-
 // init sqlite db
 var fs = require('fs');
 var dbFile = './.data/sqlite.db';
@@ -82,7 +81,7 @@ app.get('/l/:slug', function(request, response) {
 // read the sqlite3 module docs and try to add your own! https://www.npmjs.com/package/sqlite3
 app.get('/link/:slug', function(request, response) {
   db.get(
-    'SELCT * FROM links WHERE slug = ?', 
+    'SELECT * FROM links WHERE slug = ?', 
     [request.params.slug], 
     (err, row) => {
       if (err) {
@@ -95,15 +94,31 @@ app.get('/link/:slug', function(request, response) {
 });
 
 app.post('/link', function(request, response) {
+  // TODO: Authenticate!!
   newSlug((err, slug) => {
-    
-    db.run(
-      'INSERT INTO links VALUES (slug = ?, url = ?)', 
-      [slug, url], 
-      (err) => {
-
-      });
-    response.json({status: 'ok'});
+    if (!request.body.url) {
+      response.json({status: 'no', error: 'No url provided.'});
+    } else {
+      db.run(
+        'INSERT INTO links VALUES (slug = ?, url = ?)', 
+        [slug, request.body.url], 
+        (err) => {
+          if (err) {
+            db.get(
+              'SELECT * FROM links WHERE url = ?', 
+              [request.body.url], 
+              (err, row) => {
+                if (err) {
+                  response.json({status: 'db_error', error: err});
+                } else {
+                  response.json({status: 'ok', link: row});
+                }                
+              });
+          } else {
+            response.json({status: 'ok', href: ''});        
+          }
+        });    
+    }
   });
 });
 
