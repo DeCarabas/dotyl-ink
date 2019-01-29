@@ -1,3 +1,10 @@
+This is a little link shortner.
+
+URLs are shortened to a random slug, there is no hashing involved.
+
+Shortened URLs are stored in a local sqlite. This is probably not the best idea, but it's what I've got for now.
+
+
 Welcome to Glitch
 =================
 
