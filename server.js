@@ -109,7 +109,7 @@ function newSlug(callback) {
 }
 
 function formatShortLink(slug) {
-  return "/l/" + slug;
+  return "http://dotyl.ink/l/" + slug;
 }
 
 // http://expressjs.com/en/starter/basic-routing.html
