@@ -1,8 +1,8 @@
-// server.js
-// where your node app starts
 const assert = require('assert');
+const crypto = require('crypto');
+const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 
-// init project
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
@@ -10,49 +10,36 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(express.json());
 
-// init sqlite db
-const fs = require('fs');
-const dbFile = './.data/sqlite.db';
-const exists = fs.existsSync(dbFile);
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(dbFile);
+function initializeDatabase() {
+  const dbFile = './.data/sqlite.db';
+  const exists = fs.existsSync(dbFile);
+  const db = new sqlite3.Database(dbFile);
 
-// if ./.data/sqlite.db does not exist, create it, otherwise print records to console
-db.serialize(function(){
-  if (!exists) {
-    db.run(
-      'CREATE TABLE links ('+
-      '    slug TEXT PRIMARY KEY,'+
-      '    url TEXT UNIQUE,' +
-      '    created DATETIME DEFAULT CURRENT_TIMESTAMP'+
-      ')'
-    );
-  }
-  else {
-    console.log('Database ready to go!');
-    db.each('SELECT * FROM links LIMIT 10', function(err, row) {
-      if (row) {
-        console.log('record:', row);
-      }
-    });
-  }
-});
-
-var crypto = require('crypto');
-
-
-function newSlug(callback) {
-  const SLUG_LENGTH_BYTES = 6;
-  
-  crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
-    if (err) {
-      callback(err);
-    } else {
-      const slug = base32encode(buf).replace(/=+$/, ''); // Remove pading.
-      callback(null, slug);
+  // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
+  db.serialize(function(){
+    if (!exists) {
+      db.run(
+        'CREATE TABLE links ('+
+        '    slug TEXT PRIMARY KEY,'+
+        '    url TEXT UNIQUE,' +
+        '    created DATETIME DEFAULT CURRENT_TIMESTAMP'+
+        ')'
+      );
+    }
+    else {
+      console.log('Database ready to go!');
+      db.each('SELECT * FROM links LIMIT 10', function(err, row) {
+        if (row) {
+          console.log('record:', row);
+        }
+      });
     }
   });
+  
+  return db;
 }
+
+const db = initializeDatabase();
 
 function getBySlug(slug, callback) {
    db.get(
@@ -105,6 +92,19 @@ function insertNew(slug, url, callback) {
         if (err) { console.log("insertNew error:", err); }
         callback(err);
       });
+}
+
+function newSlug(callback) {
+  const SLUG_LENGTH_BYTES = 6;
+  
+  crypto.randomBytes(SLUG_LENGTH_BYTES, (err, buf) => {
+    if (err) {
+      callback(err);
+    } else {
+      const slug = base32encode(buf).replace(/=+$/, ''); // Remove pading.
+      callback(null, slug);
+    }
+  });
 }
 
 function formatShortLink(slug) {
@@ -169,21 +169,26 @@ app.post('/link', function(request, response) {
       response.status(400).json({status: 'no', errors: ["URL doesn't appear to be HTTP or HTTPS."]});
     } else {      
       console.log("Creating link for", slug, url);
-      insertNew(slug, url, (err_insert) => {
-        if (err_insert) {
-          getByURL(request.body.url, (err_get, existing) => {
-            if (err_get || !existing) {
-              response.status(500).json({status: 'db_error', errors: [err_insert, err_get]});
-            } else {
-              const short = formatShortLink(existing.slug);
-              response.json({status: 'ok', link: {slug: existing.slug, url, short}});
-            }
-          });
-        } else {          
-          const short = formatShortLink(slug);
-          response.json({status: 'ok', link: {slug, url, short}});
-        }
-      });
+      const short = formatShortLink(slug);
+      if (short.length >= url.length) {
+        console.log("That link is already short enough.");
+        response.json({status: 'ok', link: {slug, url, short: url}});
+      } else {
+        insertNew(slug, url, (err_insert) => {
+          if (err_insert) {
+            getByURL(request.body.url, (err_get, existing) => {
+              if (err_get || !existing) {
+                response.status(500).json({status: 'db_error', errors: [err_insert, err_get]});
+              } else {
+                const short = formatShortLink(existing.slug);
+                response.json({status: 'ok', link: {slug: existing.slug, url, short}});
+              }
+            });
+          } else {                    
+            response.json({status: 'ok', link: {slug, url, short}});
+          }
+        });
+      }
     }
   });
 });

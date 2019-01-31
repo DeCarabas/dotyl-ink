@@ -1,10 +1,6 @@
 // client-side js
 // run by the browser each time your view template referencing it is loaded
 
-console.log('hello world :o');
-
-let dreams = [];
-
 // define variables that reference elements on our page
 const urlsList = document.getElementById('urls');
 const urlForm = document.forms[0];
