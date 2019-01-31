@@ -1,89 +1,98 @@
 const assert = require("assert");
 const crypto = require("crypto");
 const fs = require("fs");
-const sqlite3 = require("sqlite3").verbose();
-
 const express = require("express");
 const bodyParser = require("body-parser");
+const { Pool } = require("pg");
+
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(express.json());
 
 function initializeDatabase() {
-  const dbFile = "./.data/sqlite.db";
-  const exists = fs.existsSync(dbFile);
-  const db = new sqlite3.Database(dbFile);
+  // const sqlite3 = require("sqlite3").verbose();
+  // const dbFile = "./.data/sqlite.db";
+  // const exists = fs.existsSync(dbFile);
+  // const db = new sqlite3.Database(dbFile);
 
-  // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
-  db.serialize(function() {
-    if (!exists) {
-      db.run(
-        "CREATE TABLE links (" +
-          "    slug TEXT PRIMARY KEY," +
-          "    url TEXT UNIQUE," +
-          "    created DATETIME DEFAULT CURRENT_TIMESTAMP" +
-          ")"
-      );
-    } else {
-      console.log("Database ready to go!");
-      db.each("SELECT * FROM links LIMIT 10", function(err, row) {
-        if (row) {
-          console.log("record:", row);
-        }
-      });
-    }
+  // // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
+  // db.serialize(function() {
+  //   if (!exists) {
+  //     db.run(
+  //       "CREATE TABLE links (" +
+  //         "    slug TEXT PRIMARY KEY," +
+  //         "    url TEXT UNIQUE," +
+  //         "    created DATETIME DEFAULT CURRENT_TIMESTAMP" +
+  //         ")"
+  //     );
+  //   } else {
+  //     console.log("Database ready to go!");
+  //     db.each("SELECT * FROM links LIMIT 10", function(err, row) {
+  //       if (row) {
+  //         console.log("record:", row);
+  //       }
+  //     });
+  //   }
+  // });
+  // return db;
+
+  return new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: true
   });
-
-  return db;
 }
 
 const db = initializeDatabase();
 
 function getBySlug(slug, callback) {
-  db.get("SELECT * FROM links WHERE slug = ?", [slug], (err, row) => {
+  db.query("SELECT * FROM links WHERE slug = $1", [slug], (err, res) => {
     if (err) {
       console.log("getBySlug error:", err);
       callback(err);
     } else {
-      callback(null, row);
+      callback(null, res.rows[0]);
     }
   });
 }
 
 function getByURL(url, callback) {
-  db.get("SELECT * FROM links WHERE url = ?", [url], (err, row) => {
+  db.query("SELECT * FROM links WHERE url = $1", [url], (err, res) => {
     if (err) {
       console.log("getByURL error:", err);
       callback(err);
     } else {
-      callback(null, row);
+      callback(null, res.rows[0]);
     }
   });
 }
 
 function getLatest(callback) {
-  db.all(
+  db.query(
     "SELECT * FROM links ORDER BY created DESC LIMIT 100",
     [],
-    (err, rows) => {
+    (err, res) => {
       if (err) {
         console.log("getLatest error:", err);
         callback(err);
       } else {
-        callback(null, rows);
+        callback(null, res.rows);
       }
     }
   );
 }
 
 function insertNew(slug, url, callback) {
-  db.run("INSERT INTO links(slug, url) VALUES (?, ?)", [slug, url], err => {
-    if (err) {
-      console.log("insertNew error:", err);
+  db.query(
+    "INSERT INTO links(slug, url) VALUES ($1, $2)",
+    [slug, url],
+    (err, _) => {
+      if (err) {
+        console.log("insertNew error:", err);
+      }
+      callback(err);
     }
-    callback(err);
-  });
+  );
 }
 
 function newSlug(callback) {
