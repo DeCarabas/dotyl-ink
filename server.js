@@ -4,6 +4,7 @@ const fs = require("fs");
 const express = require("express");
 const bodyParser = require("body-parser");
 const { Pool } = require("pg");
+const handlebars = require("handlebars");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -11,32 +12,6 @@ app.use(express.static("public"));
 app.use(express.json());
 
 function initializeDatabase() {
-  // const sqlite3 = require("sqlite3").verbose();
-  // const dbFile = "./.data/sqlite.db";
-  // const exists = fs.existsSync(dbFile);
-  // const db = new sqlite3.Database(dbFile);
-
-  // // if ./.data/sqlite.db does not exist, create it, otherwise print records to console
-  // db.serialize(function() {
-  //   if (!exists) {
-  //     db.run(
-  //       "CREATE TABLE links (" +
-  //         "    slug TEXT PRIMARY KEY," +
-  //         "    url TEXT UNIQUE," +
-  //         "    created DATETIME DEFAULT CURRENT_TIMESTAMP" +
-  //         ")"
-  //     );
-  //   } else {
-  //     console.log("Database ready to go!");
-  //     db.each("SELECT * FROM links LIMIT 10", function(err, row) {
-  //       if (row) {
-  //         console.log("record:", row);
-  //       }
-  //     });
-  //   }
-  // });
-  // return db;
-
   return new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: true
@@ -112,9 +87,23 @@ function formatShortLink(slug) {
   return "http://dotyl.ink/l/" + slug;
 }
 
+// Template stuff
+const root_template = handlebars.compile(
+  fs.readFileSync(__dirname + "/views/index.html").toString()
+);
+
 // http://expressjs.com/en/starter/basic-routing.html
 app.get("/", function(request, response) {
-  response.sendFile(__dirname + "/views/index.html");
+  getLatest((err, rows) => {
+    if (err) {
+      response.status(500).json({ status: "db_error", errors: [err] });
+    } else {
+      const links = rows.map(r => {
+        return { slug: r.slug, url: r.url, short: formatShortLink(r.slug) };
+      });
+      response.send(root_template({ links }));
+    }
+  });
 });
 
 app.get("/l/:slug", function(request, response) {

@@ -10,45 +10,65 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Welcome to Glitch!</title>
-    <meta name="description" content="A cool thing made with Glitch">
+    <title>dotyl.ink</title>
+    <meta name="description" content="Doty's personal link shortener and archival tool.">
     <link id="favicon" rel="icon" href="https://glitch.com/edit/favicon-app.ico" type="image/x-icon">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- import the webpage's stylesheet -->
-    <link rel="stylesheet" href="/style.css">
-    
-    <!-- import the webpage's client-side javascript file -->
-    <script src="/client.js" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
   </head>
-  <body>
+  <body class="helvetica bg-light-green">
     <header>
-      <h1>dotyl.ink</h1>
+        <h1 class="f1 pl4 near-black bg-green">dotyl.ink</h1>
     </header>
 
-    <main>
-      <form>
-        <input name="user" type="text" placeholder="email@address" autocomplete="username">
-        <input name="password" type="password" autocomplete="current-password">        
-        <input name="url" type="text" maxlength="4096" placeholder="Url" autocomplete="url" aria-labelledby="submit-url">
-        <button type="submit" id="submit-url">Submit URL</button>
-      </form>
-      
-      <section class="urls">
-        <ul id="urls"></ul>
-      </section>
+    <main class="mw9 center ph3-ns cf h-100">
+        <section class="fl w-two-thirds pa1">
+            <div class="ma2 pa2 near-black bg-green">
+                <h2 class="f2">Submit a Link</h2>
+                <hr />
+                <form action="/link" method="post">
+                    <input name="user"
+                           type="text"
+                           placeholder="email@address"
+                           autocomplete="username"
+                           class="w-100 pa2">
+                    <input name="password"
+                           type="password"
+                           autocomplete="current-password"
+                           class="w-100 pa2">
+                    <input name="url"
+                           type="text"
+                           maxlength="4096"
+                           placeholder="Url"
+                           autocomplete="url"
+                           aria-labelledby="submit-url"
+                           class="w-100 pa2">
+                    <button type="submit" id="submit-url" class="mt2">Submit URL</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="fl w-third pa1 h-100">
+            <div class="ma2 pa2 near-black bg-green">
+                <h2 class="f2" >Urls</h2>
+                <hr />
+                <ul id="urls">
+                    {{#each links}}
+                    <li>
+                        <a href="{{short}}">{{url}}</a>
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+        </section>
     </main>
 
-    <footer>
-      Made with <a href="https://glitch.com">Glitch</a>!
+    <footer class="mt4 pl4 pv2 near-black bg-green">
+      Originally made with <a href="https://glitch.com">Glitch</a>!
     </footer>
-
-    <!-- include the Glitch button to show what the webpage is about and
-          to make it easier for folks to view source and remix -->
-    <div class="glitchButton" style="position:fixed;top:20px;right:20px;"></div>
-    <script src="https://button.glitch.me/button.js"></script>
-
   </body>
 </html>
