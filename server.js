@@ -186,7 +186,7 @@ app.post("/link", function(request, response) {
               }
             });
           } else {
-            response.json({ status: "ok", link: { slug, url, short } });
+            response.redirect("/");
           }
         });
       }
@@ -196,7 +196,9 @@ app.post("/link", function(request, response) {
 
 // listen for requests :)
 var listener = app.listen(process.env.PORT, function() {
-  console.log("Your app is listening on port " + listener.address().port);
+  console.log(
+    "Your app is listening on http://localhost:" + listener.address().port
+  );
 });
 
 function base32encode(buf) {
